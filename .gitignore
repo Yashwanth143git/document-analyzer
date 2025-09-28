@@ -14,9 +14,12 @@
 # Misc
 .DS_Store
 *.log
+<<<<<<< HEAD
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+=======
+>>>>>>> 937c70e5581bc110bda2ca866ba03054f6b8e9c8
 
 # Backend
 backend/uploads/
