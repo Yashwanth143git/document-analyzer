@@ -8,6 +8,8 @@ const LoginModal = ({ onLoginSuccess, onClose }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState("");
 
+  const API_BASE = "http://localhost:5000/api";
+
   const handleSendOTP = async () => {
     if (!phoneNumber) {
       setMessage("Please enter your phone number");
@@ -17,11 +19,30 @@ const LoginModal = ({ onLoginSuccess, onClose }) => {
     setIsLoading(true);
     setMessage("Sending OTP...");
 
-    setTimeout(() => {
+    try {
+      const response = await fetch(`${API_BASE}/auth/send-otp`, {
+        method: "POST",
+        headers: { 
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ phoneNumber })
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        setStep("otp");
+        setMessage(" OTP sent successfully!");
+        console.log("Debug OTP:", result.debug_otp); // Remove in production
+      } else {
+        setMessage(` ${result.error}`);
+      }
+    } catch (error) {
+      setMessage(" Network error. Please check if backend server is running.");
+      console.error("OTP Error:", error);
+    } finally {
       setIsLoading(false);
-      setStep("otp");
-      setMessage(" OTP sent! Use 123456 for demo");
-    }, 2000);
+    }
   };
 
   const handleVerifyOTP = async () => {
@@ -33,15 +54,30 @@ const LoginModal = ({ onLoginSuccess, onClose }) => {
     setIsLoading(true);
     setMessage("Verifying...");
 
-    setTimeout(() => {
-      if (otp === "123456") {
-        setMessage(" Login successful!");
-        setTimeout(() => onLoginSuccess(), 1000);
+    try {
+      const response = await fetch(`${API_BASE}/auth/verify-otp`, {
+        method: "POST",
+        headers: { 
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ phoneNumber, otp })
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        setMessage(" Login successful! Redirecting...");
+        setTimeout(() => {
+          onLoginSuccess();
+        }, 1000);
       } else {
-        setMessage(" Invalid OTP. Try 123456");
-        setIsLoading(false);
+        setMessage(` ${result.error}`);
       }
-    }, 1500);
+    } catch (error) {
+      setMessage(" Network error. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -83,13 +119,13 @@ const LoginModal = ({ onLoginSuccess, onClose }) => {
                 <label> Enter OTP</label>
                 <input
                   type="text"
-                  placeholder="123456"
+                  placeholder="Enter 6-digit OTP"
                   value={otp}
-                  onChange={(e) => setOtp(e.target.value)}
+                  onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
                   className="glass-input"
                   maxLength={6}
                 />
-                <small>Demo OTP: <strong>123456</strong></small>
+                <small>Check console for debug OTP</small>
               </div>
               
               <button 
@@ -110,7 +146,7 @@ const LoginModal = ({ onLoginSuccess, onClose }) => {
         </div>
 
         <div className="modal-footer">
-          <p> Your data is securely encrypted</p>
+          <p> Connected to Backend API</p>
         </div>
       </div>
     </div>

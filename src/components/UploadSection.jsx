@@ -7,6 +7,8 @@ const UploadSection = ({ onDocumentUpload }) => {
   const [uploadProgress, setUploadProgress] = useState(0);
   const fileInputRef = useRef(null);
 
+  const API_BASE = "http://localhost:5000/api";
+
   const handleDragOver = (e) => {
     e.preventDefault();
     setIsDragging(true);
@@ -26,41 +28,44 @@ const UploadSection = ({ onDocumentUpload }) => {
     }
   };
 
-  const handleFileSelect = (file) => {
+  const handleFileSelect = async (file) => {
     if (file && (file.type === "application/pdf" || file.name.endsWith(".pdf"))) {
-      simulateUpload(file);
+      await uploadToBackend(file);
     } else {
       alert("Please select a PDF file");
     }
   };
 
-  const simulateUpload = (file) => {
+  const uploadToBackend = async (file) => {
     setIsUploading(true);
     setUploadProgress(0);
 
-    const progressInterval = setInterval(() => {
-      setUploadProgress(prev => {
-        if (prev >= 100) {
-          clearInterval(progressInterval);
-          processDocument(file);
-          return 100;
-        }
-        return prev + 10;
-      });
-    }, 200);
-  };
+    const formData = new FormData();
+    formData.append("document", file);
 
-  const processDocument = (file) => {
-    setTimeout(() => {
-      const mockData = {
-        fileName: file.name,
-        summary: `# Document Analysis Complete!\n\n**File:** ${file.name}\n**Pages:** 12\n**Key Topics:** Artificial Intelligence, Machine Learning, Neural Networks\n\n##  Executive Summary\nThis document provides a comprehensive overview of modern AI technologies, focusing on machine learning applications in various industries. The analysis reveals significant growth potential in AI-driven solutions.\n\n##  Key Findings\n- 15% annual growth in AI adoption\n- 3 main application areas identified\n- Risk assessment: Moderate market volatility\n\n##  Recommendations\n- Invest in AI research and development\n- Focus on ethical AI implementation\n- Monitor regulatory developments`,
-        content: "This is a simulated document content that would be extracted and analyzed by AI..."
-      };
-      
-      onDocumentUpload(mockData);
+    try {
+      const response = await fetch(`${API_BASE}/documents/upload`, {
+        method: "POST",
+        body: formData,
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        setUploadProgress(100);
+        setTimeout(() => {
+          onDocumentUpload(result.data);
+          setIsUploading(false);
+        }, 1000);
+      } else {
+        alert(`Upload failed: ${result.error}`);
+        setIsUploading(false);
+      }
+    } catch (error) {
+      console.error("Upload error:", error);
+      alert("Upload failed. Please check if backend is running.");
       setIsUploading(false);
-    }, 1000);
+    }
   };
 
   return (
@@ -92,7 +97,7 @@ const UploadSection = ({ onDocumentUpload }) => {
               <div className="progress-ring">
                 <div className="progress-fill" style={{ transform: `rotate(${uploadProgress * 3.6}deg)` }}></div>
               </div>
-              <h3>Analyzing with AI...</h3>
+              <h3>Uploading to Backend...</h3>
               <p>{uploadProgress}% complete</p>
               <div className="processing-animation">
                 <span></span>
@@ -118,11 +123,11 @@ const UploadSection = ({ onDocumentUpload }) => {
         </div>
 
         <div className="upload-tips">
-          <h4> Pro Tips:</h4>
+          <h4> Connected to Backend:</h4>
           <ul>
-            <li>Use high-quality PDFs for better analysis</li>
-            <li>Documents with text (not scanned images) work best</li>
-            <li>Average processing time: 15-30 seconds</li>
+            <li>Real file upload to server</li>
+            <li>File validation and processing</li>
+            <li>Ready for OpenAI integration</li>
           </ul>
         </div>
       </div>
