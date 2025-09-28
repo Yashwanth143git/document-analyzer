@@ -1,4 +1,4 @@
-﻿{
+{
   "name": "document-analyzer-backend",
   "version": "1.0.0",
   "description": "Backend for document analyzer with OTP and AI features",
@@ -8,12 +8,13 @@
     "dev": "nodemon server.js"
   },
   "dependencies": {
-    "express": "^4.18.2",
-    "cors": "^2.8.5",
-    "dotenv": "^16.3.1",
-    "multer": "^1.4.5-lts.1",
     "axios": "^1.6.0",
-    "pdf-parse": "^1.1.1"
+    "cors": "^2.8.5",
+    "dotenv": "^16.6.1",
+    "express": "^4.21.2",
+    "multer": "^1.4.5-lts.1",
+    "pdf-parse": "^1.1.1",
+    "twilio": "^5.10.1"
   },
   "devDependencies": {
     "nodemon": "^3.0.1"

@@ -9,6 +9,13 @@ const LoginModal = ({ onLoginSuccess, onClose }) => {
   const [message, setMessage] = useState("");
 
   const API_BASE = "http://localhost:5000/api";
+  
+  // These numbers work for testing (update as you verify more)
+  const TEST_NUMBERS = [
+    '+918810991245',
+    '+919100401942', 
+    '+917899219881'
+  ];
 
   const handleSendOTP = async () => {
     if (!phoneNumber) {
@@ -32,13 +39,12 @@ const LoginModal = ({ onLoginSuccess, onClose }) => {
 
       if (result.success) {
         setStep("otp");
-        setMessage(" OTP sent successfully!");
-        console.log("Debug OTP:", result.debug_otp); // Remove in production
+        setMessage(" OTP sent successfully! Check your SMS.");
       } else {
         setMessage(` ${result.error}`);
       }
     } catch (error) {
-      setMessage(" Network error. Please check if backend server is running.");
+      setMessage(" Network error. Please check your connection.");
       console.error("OTP Error:", error);
     } finally {
       setIsLoading(false);
@@ -47,7 +53,7 @@ const LoginModal = ({ onLoginSuccess, onClose }) => {
 
   const handleVerifyOTP = async () => {
     if (!otp) {
-      setMessage("Please enter the OTP");
+      setMessage("Please enter the OTP from your SMS");
       return;
     }
 
@@ -80,12 +86,16 @@ const LoginModal = ({ onLoginSuccess, onClose }) => {
     }
   };
 
+  const quickFillNumber = (number) => {
+    setPhoneNumber(number);
+  };
+
   return (
     <div className="modal-overlay">
       <div className="login-modal">
         <div className="modal-header">
-          <h2>Welcome Back! </h2>
-          <p>Secure login with OTP verification</p>
+          <h2>Welcome to DocuAnalyzer! </h2>
+          <p>Secure login with real SMS OTP</p>
           <button className="close-btn" onClick={onClose}></button>
         </div>
 
@@ -93,7 +103,7 @@ const LoginModal = ({ onLoginSuccess, onClose }) => {
           {step === "phone" && (
             <div className="form-step">
               <div className="input-group">
-                <label> Phone Number</label>
+                <label> Indian Phone Number</label>
                 <input
                   type="tel"
                   placeholder="+91 9876543210"
@@ -101,6 +111,20 @@ const LoginModal = ({ onLoginSuccess, onClose }) => {
                   onChange={(e) => setPhoneNumber(e.target.value)}
                   className="glass-input"
                 />
+                <small>Format: +91 followed by 10-digit number</small>
+                <div className="quick-numbers">
+                  <small>Test with these verified numbers:</small>
+                  {TEST_NUMBERS.map(number => (
+                    <button 
+                      key={number}
+                      type="button"
+                      onClick={() => quickFillNumber(number)}
+                      className="quick-number-btn"
+                    >
+                      {number}
+                    </button>
+                  ))}
+                </div>
               </div>
               
               <button 
@@ -108,7 +132,7 @@ const LoginModal = ({ onLoginSuccess, onClose }) => {
                 disabled={isLoading}
                 className="primary-btn"
               >
-                {isLoading ? "Sending OTP..." : "Send OTP"}
+                {isLoading ? "Sending OTP via SMS..." : "Send OTP via SMS"}
               </button>
             </div>
           )}
@@ -116,7 +140,7 @@ const LoginModal = ({ onLoginSuccess, onClose }) => {
           {step === "otp" && (
             <div className="form-step">
               <div className="input-group">
-                <label> Enter OTP</label>
+                <label> Enter OTP from SMS</label>
                 <input
                   type="text"
                   placeholder="Enter 6-digit OTP"
@@ -125,7 +149,7 @@ const LoginModal = ({ onLoginSuccess, onClose }) => {
                   className="glass-input"
                   maxLength={6}
                 />
-                <small>Check console for debug OTP</small>
+                <small>Check your SMS messages for the OTP</small>
               </div>
               
               <button 
@@ -133,7 +157,7 @@ const LoginModal = ({ onLoginSuccess, onClose }) => {
                 disabled={isLoading}
                 className="primary-btn"
               >
-                {isLoading ? "Verifying..." : "Verify & Login"}
+                {isLoading ? "Verifying..." : "Verify OTP & Login"}
               </button>
             </div>
           )}
@@ -146,7 +170,7 @@ const LoginModal = ({ onLoginSuccess, onClose }) => {
         </div>
 
         <div className="modal-footer">
-          <p> Connected to Backend API</p>
+          <p> Real SMS OTP  Indian Numbers Only</p>
         </div>
       </div>
     </div>

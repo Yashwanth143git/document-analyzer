@@ -1,11 +1,12 @@
 ﻿const express = require('express');
+const TwilioService = require('../utils/twilioService');
 const router = express.Router();
 
-// Store OTPs temporarily
-const otpStore = new Map();
+// Store verification sessions temporarily
+const verificationSessions = new Map();
 
 // Send OTP endpoint
-router.post('/send-otp', (req, res) => {
+router.post('/send-otp', async (req, res) => {
   try {
     const { phoneNumber } = req.body;
     
@@ -16,38 +17,49 @@ router.post('/send-otp', (req, res) => {
       });
     }
 
-    // Generate 6-digit OTP
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    
-    // Store OTP with 10 minutes expiry
-    otpStore.set(phoneNumber, {
-      otp: otp,
-      expires: Date.now() + 10 * 60 * 1000 // 10 minutes
-    });
+    // Validate phone number format
+    if (!TwilioService.validatePhoneNumber(phoneNumber)) {
+      return res.json({ 
+        success: false, 
+        error: 'Invalid phone number format. Use international format: +1234567890' 
+      });
+    }
 
-    console.log(` OTP ${otp} generated for ${phoneNumber} (Simulation Mode)`);
+    console.log(` Sending OTP to: ${phoneNumber}`);
 
-    // For now, we'll simulate OTP sending
-    // In next steps, we'll integrate Twilio here
-    
-    res.json({ 
-      success: true, 
-      message: 'OTP sent successfully!',
-      debug_otp: otp, // Remove this in production
-      note: 'Currently in simulation mode - real SMS will be added with Twilio'
-    });
+    // Send OTP via Twilio Verify API
+    const twilioResult = await TwilioService.sendOTP(phoneNumber);
+
+    if (twilioResult.success) {
+      // Store verification session
+      verificationSessions.set(phoneNumber, {
+        verificationSid: twilioResult.verificationSid,
+        expires: Date.now() + 10 * 60 * 1000 // 10 minutes
+      });
+
+      res.json({ 
+        success: true, 
+        message: twilioResult.message || 'OTP sent successfully to your mobile!',
+        verificationSid: twilioResult.verificationSid
+      });
+    } else {
+      res.json({ 
+        success: false, 
+        error: twilioResult.error 
+      });
+    }
     
   } catch (error) {
     console.error('OTP send error:', error);
     res.json({ 
       success: false, 
-      error: 'Failed to send OTP' 
+      error: 'Failed to send OTP. Please try again.' 
     });
   }
 });
 
 // Verify OTP endpoint
-router.post('/verify-otp', (req, res) => {
+router.post('/verify-otp', async (req, res) => {
   try {
     const { phoneNumber, otp } = req.body;
 
@@ -58,28 +70,16 @@ router.post('/verify-otp', (req, res) => {
       });
     }
 
-    const storedData = otpStore.get(phoneNumber);
+    // Verify OTP via Twilio Verify API
+    const verificationResult = await TwilioService.verifyOTP(phoneNumber, otp);
 
-    if (!storedData) {
-      return res.json({ 
-        success: false, 
-        error: 'OTP not found. Please request a new one.' 
-      });
-    }
-
-    if (storedData.expires < Date.now()) {
-      otpStore.delete(phoneNumber);
-      return res.json({ 
-        success: false, 
-        error: 'OTP expired. Please request a new one.' 
-      });
-    }
-
-    if (storedData.otp === otp) {
-      otpStore.delete(phoneNumber);
+    if (verificationResult.success) {
+      // Clear verification session
+      verificationSessions.delete(phoneNumber);
+      
       res.json({ 
         success: true, 
-        message: 'Login successful!',
+        message: verificationResult.message || 'Login successful!',
         user: { 
           phoneNumber,
           id: 'user_' + Date.now()
@@ -88,14 +88,14 @@ router.post('/verify-otp', (req, res) => {
     } else {
       res.json({ 
         success: false, 
-        error: 'Invalid OTP. Please try again.' 
+        error: verificationResult.error || 'Invalid OTP. Please try again.' 
       });
     }
   } catch (error) {
     console.error('OTP verify error:', error);
     res.json({ 
       success: false, 
-      error: 'Verification failed' 
+      error: 'Verification failed. Please try again.' 
     });
   }
 });
