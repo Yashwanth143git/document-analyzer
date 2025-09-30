@@ -10,6 +10,7 @@ function App() {
   const [documentUploaded, setDocumentUploaded] = useState(false);
   const [showChatBot, setShowChatBot] = useState(false);
   const [documentData, setDocumentData] = useState(null);
+  const [apiKey, setApiKey] = useState("");
 
   useEffect(() => {
     setShowLogin(true);
@@ -62,7 +63,11 @@ function App() {
         )}
 
         {isLoggedIn && !documentUploaded && (
-          <UploadSection onDocumentUpload={handleDocumentUpload} />
+          <UploadSection
+            onDocumentUpload={handleDocumentUpload}
+            apiKey={apiKey}
+            setApiKey={setApiKey}
+          />
         )}
 
         {showChatBot && (
@@ -70,6 +75,7 @@ function App() {
             documentData={documentData}
             isOpen={showChatBot}
             onClose={() => setShowChatBot(false)}
+            apiKey={apiKey}
           />
         )}
 

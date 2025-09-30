@@ -1,7 +1,7 @@
 ﻿import React, { useState, useRef } from "react";
 import "./Components.css";
 
-const UploadSection = ({ onDocumentUpload }) => {
+const UploadSection = ({ onDocumentUpload, apiKey, setApiKey }) => {
   const [isDragging, setIsDragging] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
@@ -57,6 +57,9 @@ const UploadSection = ({ onDocumentUpload }) => {
 
       const response = await fetch(`${API_BASE}/documents/upload`, {
         method: "POST",
+        headers: {
+          'x-openai-api-key': apiKey,
+        },
         body: formData,
       });
 
@@ -88,6 +91,16 @@ const UploadSection = ({ onDocumentUpload }) => {
           <div className="upload-icon"></div>
           <h2>Upload Your Document</h2>
           <p>AI-powered analysis with OpenAI</p>
+        </div>
+
+        <div className="api-key-input-container">
+          <input
+            type="password"
+            placeholder="Enter your OpenAI API Key"
+            value={apiKey}
+            onChange={(e) => setApiKey(e.target.value)}
+            className="api-key-input"
+          />
         </div>
 
         <div 

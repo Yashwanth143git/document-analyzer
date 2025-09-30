@@ -1,7 +1,7 @@
 ﻿import React, { useState, useRef, useEffect } from "react";
 import "./Components.css";
 
-const ChatBot = ({ documentData, isOpen, onClose }) => {
+const ChatBot = ({ documentData, isOpen, onClose, apiKey }) => {
   const [messages, setMessages] = useState([]);
   const [inputMessage, setInputMessage] = useState("");
   const [isTyping, setIsTyping] = useState(false);
@@ -25,11 +25,13 @@ const ChatBot = ({ documentData, isOpen, onClose }) => {
     scrollToBottom();
   }, [messages, isTyping]);
 
+  const API_BASE = "http://localhost:5000/api";
+
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
-  const handleSendMessage = () => {
+  const handleSendMessage = async () => {
     if (!inputMessage.trim()) return;
 
     const userMessage = {
@@ -44,25 +46,52 @@ const ChatBot = ({ documentData, isOpen, onClose }) => {
     setInputMessage("");
     setIsTyping(true);
 
-    setTimeout(() => {
-      const responses = [
-        "Based on the document analysis, this topic is covered in section 3.2. The key points mention...",
-        "The document suggests that this approach has shown 25% improvement in efficiency based on the data in chapter 4.",
-        "This is addressed in the recommendations section. The proposed strategy involves three main phases...",
-        "The analysis indicates this is a critical area with significant growth potential, as shown in the market data."
-      ];
-      
-      const botMessage = {
+    try {
+      const response = await fetch(`${API_BASE}/documents/chat`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-openai-api-key": apiKey,
+        },
+        body: JSON.stringify({
+          message: inputMessage,
+          documentText: documentData.summary, // Or the full text if available
+        }),
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        const botMessage = {
+          id: messages.length + 2,
+          type: "text",
+          content: result.response,
+          timestamp: new Date(),
+          isBot: true
+        };
+        setMessages(prev => [...prev, botMessage]);
+      } else {
+        const errorMessage = {
+          id: messages.length + 2,
+          type: "text",
+          content: `Error: ${result.error}`,
+          timestamp: new Date(),
+          isBot: true
+        };
+        setMessages(prev => [...prev, errorMessage]);
+      }
+    } catch (error) {
+      const errorMessage = {
         id: messages.length + 2,
         type: "text",
-        content: responses[Math.floor(Math.random() * responses.length)],
+        content: "Error: Could not connect to the server.",
         timestamp: new Date(),
         isBot: true
       };
-
-      setMessages(prev => [...prev, botMessage]);
+      setMessages(prev => [...prev, errorMessage]);
+    } finally {
       setIsTyping(false);
-    }, 2000);
+    }
   };
 
   const handleKeyPress = (e) => {

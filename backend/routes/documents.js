@@ -31,6 +31,7 @@ const upload = multer({
 // Upload and analyze document with AI
 router.post('/upload', upload.single('document'), async (req, res) => {
   try {
+    const apiKey = req.header('x-openai-api-key');
     if (!req.file) {
       return res.json({ 
         success: false, 
@@ -41,7 +42,7 @@ router.post('/upload', upload.single('document'), async (req, res) => {
     console.log(` Processing document: ${req.file.originalname}`);
 
     // Validate OpenAI API key
-    const isOpenAIValid = await OpenAIService.validateAPIKey();
+    const isOpenAIValid = await OpenAIService.validateAPIKey(apiKey);
     if (!isOpenAIValid) {
       return res.json({
         success: false,
@@ -63,7 +64,7 @@ router.post('/upload', upload.single('document'), async (req, res) => {
     console.log(` Extracted ${documentText.length} characters from PDF`);
 
     // Generate AI summary
-    const summary = await OpenAIService.generateSummary(documentText);
+    const summary = await OpenAIService.generateSummary(documentText, apiKey);
 
     // Clean up uploaded file
     fs.unlinkSync(req.file.path);
@@ -102,6 +103,7 @@ router.post('/upload', upload.single('document'), async (req, res) => {
 router.post('/chat', async (req, res) => {
   try {
     const { message, documentText } = req.body;
+    const apiKey = req.header('x-openai-api-key');
 
     if (!message) {
       return res.json({ 
@@ -119,7 +121,7 @@ router.post('/chat', async (req, res) => {
 
     console.log(` Processing chat question: ${message}`);
 
-    const answer = await OpenAIService.answerQuestion(documentText, message);
+    const answer = await OpenAIService.answerQuestion(documentText, message, apiKey);
 
     res.json({ 
       success: true, 

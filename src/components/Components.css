@@ -112,6 +112,31 @@
   margin-bottom: 30px;
 }
 
+.api-key-input-container {
+  margin-bottom: 20px;
+}
+
+.api-key-input {
+  width: 100%;
+  padding: 12px 18px;
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 10px;
+  color: white;
+  font-size: 14px;
+  transition: all 0.3s ease;
+}
+
+.api-key-input::placeholder {
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.api-key-input:focus {
+  outline: none;
+  border-color: rgba(102, 126, 234, 0.8);
+  background: rgba(0, 0, 0, 0.3);
+}
+
 .upload-icon {
   font-size: 48px;
   margin-bottom: 15px;

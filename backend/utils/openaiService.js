@@ -95,12 +95,13 @@ const { OpenAI } = require('openai');
 const pdf = require('pdf-parse');
 
 class OpenAIService {
-  static getClient() {
-    if (!process.env.OPENAI_API_KEY) {
-      throw new Error('OPENAI_API_KEY is not set');
+  static getClient(apiKey) {
+    const keyToUse = apiKey || process.env.OPENAI_API_KEY;
+    if (!keyToUse) {
+      throw new Error('OPENAI_API_KEY is not set or provided');
     }
     return new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY,
+      apiKey: keyToUse,
     });
   }
 
@@ -109,8 +110,8 @@ class OpenAIService {
     return data.text;
   }
 
-  static async generateSummary(documentText) {
-    const openai = this.getClient();
+  static async generateSummary(documentText, apiKey) {
+    const openai = this.getClient(apiKey);
     const completion = await openai.chat.completions.create({
       model: 'gpt-3.5-turbo',
       messages: [
@@ -123,8 +124,8 @@ class OpenAIService {
     return completion.choices[0].message.content;
   }
 
-  static async answerQuestion(documentText, question) {
-    const openai = this.getClient();
+  static async answerQuestion(documentText, question, apiKey) {
+    const openai = this.getClient(apiKey);
     const completion = await openai.chat.completions.create({
       model: 'gpt-3.5-turbo',
       messages: [
@@ -137,9 +138,9 @@ class OpenAIService {
     return completion.choices[0].message.content;
   }
 
-  static async validateAPIKey() {
+  static async validateAPIKey(apiKey) {
     try {
-      const openai = this.getClient();
+      const openai = this.getClient(apiKey);
       await openai.models.list();
       return true;
     } catch (error) {
