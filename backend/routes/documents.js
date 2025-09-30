@@ -1,5 +1,7 @@
 ﻿const express = require('express');
 const multer = require('multer');
+const fs = require('fs');
+const OpenAIService = require('../utils/openaiService');
 const router = express.Router();
 
 // Configure multer for file uploads
@@ -26,8 +28,8 @@ const upload = multer({
   }
 });
 
-// Upload document endpoint
-router.post('/upload', upload.single('document'), (req, res) => {
+// Upload and analyze document with AI
+router.post('/upload', upload.single('document'), async (req, res) => {
   try {
     if (!req.file) {
       return res.json({ 
@@ -36,39 +38,70 @@ router.post('/upload', upload.single('document'), (req, res) => {
       });
     }
 
-    console.log(` File uploaded: ${req.file.originalname}`);
+    console.log(` Processing document: ${req.file.originalname}`);
 
-    // Simulate document processing
-    // In next steps, we'll add PDF text extraction and OpenAI integration here
-    
-    const mockAnalysis = {
+    // Validate OpenAI API key
+    const isOpenAIValid = await OpenAIService.validateAPIKey();
+    if (!isOpenAIValid) {
+      return res.json({
+        success: false,
+        error: 'OpenAI API key is invalid or not configured'
+      });
+    }
+
+    // Read file and extract text
+    const fileBuffer = fs.readFileSync(req.file.path);
+    const documentText = await OpenAIService.extractTextFromPDF(fileBuffer);
+
+    if (!documentText || documentText.trim().length < 50) {
+      return res.json({
+        success: false,
+        error: 'Could not extract sufficient text from the PDF. Please ensure it contains readable text.'
+      });
+    }
+
+    console.log(` Extracted ${documentText.length} characters from PDF`);
+
+    // Generate AI summary
+    const summary = await OpenAIService.generateSummary(documentText);
+
+    // Clean up uploaded file
+    fs.unlinkSync(req.file.path);
+
+    const analysisResult = {
       fileName: req.file.originalname,
       fileSize: req.file.size,
-      summary: `# Document Analysis Complete!\n\n**File:** ${req.file.originalname}\n**Size:** ${(req.file.size / 1024 / 1024).toFixed(2)} MB\n\n##  AI Analysis Summary\nThis is a simulated analysis. In the next phase, we will integrate OpenAI API for real document analysis.\n\n##  Next Steps\n- Extract text from PDF\n- Send to OpenAI for analysis\n- Generate intelligent summary\n- Enable Q&A functionality`,
-      pages: Math.ceil(Math.random() * 50) + 5, // Random page count for simulation
-      processedAt: new Date().toISOString()
+      textLength: documentText.length,
+      summary: summary,
+      processedAt: new Date().toISOString(),
+      pages: Math.ceil(documentText.length / 2000) // Estimate pages
     };
 
     res.json({ 
       success: true, 
-      message: 'Document uploaded successfully!',
-      data: mockAnalysis,
-      note: 'Currently in simulation mode - OpenAI integration will be added next'
+      message: 'Document analyzed successfully with AI!',
+      data: analysisResult
     });
     
   } catch (error) {
     console.error('Upload error:', error);
+    
+    // Clean up file on error
+    if (req.file && fs.existsSync(req.file.path)) {
+      fs.unlinkSync(req.file.path);
+    }
+
     res.json({ 
       success: false, 
-      error: 'File upload failed' 
+      error: error.message || 'Document processing failed'
     });
   }
 });
 
-// Chat with document endpoint (simulated)
-router.post('/chat', (req, res) => {
+// Chat with document using AI
+router.post('/chat', async (req, res) => {
   try {
-    const { message, documentId } = req.body;
+    const { message, documentText } = req.body;
 
     if (!message) {
       return res.json({ 
@@ -77,28 +110,28 @@ router.post('/chat', (req, res) => {
       });
     }
 
-    // Simulate AI response
-    // In next steps, we'll integrate OpenAI here
-    const responses = [
-      "Based on the document analysis, this appears to be covered in the executive summary section.",
-      "The document mentions this topic in the context of strategic recommendations.",
-      "This is addressed in the methodology section of the analyzed document.",
-      "The data suggests this aspect requires further investigation as per the findings."
-    ];
-    
-    const randomResponse = responses[Math.floor(Math.random() * responses.length)];
+    if (!documentText) {
+      return res.json({ 
+        success: false, 
+        error: 'Document text is required for chatting' 
+      });
+    }
+
+    console.log(` Processing chat question: ${message}`);
+
+    const answer = await OpenAIService.answerQuestion(documentText, message);
 
     res.json({ 
       success: true, 
-      response: randomResponse,
-      note: 'Simulated response - OpenAI integration coming next'
+      response: answer,
+      timestamp: new Date().toISOString()
     });
     
   } catch (error) {
     console.error('Chat error:', error);
     res.json({ 
       success: false, 
-      error: 'Chat processing failed' 
+      error: error.message || 'Failed to process question'
     });
   }
 });

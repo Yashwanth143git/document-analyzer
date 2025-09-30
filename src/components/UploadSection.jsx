@@ -44,10 +44,23 @@ const UploadSection = ({ onDocumentUpload }) => {
     formData.append("document", file);
 
     try {
+      // Simulate progress for better UX
+      const progressInterval = setInterval(() => {
+        setUploadProgress(prev => {
+          if (prev >= 90) {
+            clearInterval(progressInterval);
+            return 90;
+          }
+          return prev + 10;
+        });
+      }, 300);
+
       const response = await fetch(`${API_BASE}/documents/upload`, {
         method: "POST",
         body: formData,
       });
+
+      clearInterval(progressInterval);
 
       const result = await response.json();
 
@@ -56,7 +69,7 @@ const UploadSection = ({ onDocumentUpload }) => {
         setTimeout(() => {
           onDocumentUpload(result.data);
           setIsUploading(false);
-        }, 1000);
+        }, 500);
       } else {
         alert(`Upload failed: ${result.error}`);
         setIsUploading(false);
@@ -74,7 +87,7 @@ const UploadSection = ({ onDocumentUpload }) => {
         <div className="upload-header">
           <div className="upload-icon"></div>
           <h2>Upload Your Document</h2>
-          <p>AI-powered analysis for PDF documents</p>
+          <p>AI-powered analysis with OpenAI</p>
         </div>
 
         <div 
@@ -97,12 +110,12 @@ const UploadSection = ({ onDocumentUpload }) => {
               <div className="progress-ring">
                 <div className="progress-fill" style={{ transform: `rotate(${uploadProgress * 3.6}deg)` }}></div>
               </div>
-              <h3>Uploading to Backend...</h3>
+              <h3>AI Analysis in Progress...</h3>
               <p>{uploadProgress}% complete</p>
-              <div className="processing-animation">
-                <span></span>
-                <span></span>
-                <span></span>
+              <div className="processing-steps">
+                <span> Reading PDF</span>
+                <span> AI Processing</span>
+                <span> Generating Insights</span>
               </div>
             </div>
           ) : (
@@ -112,22 +125,23 @@ const UploadSection = ({ onDocumentUpload }) => {
                 <div className="arrow-icon"></div>
               </div>
               <h3>Drop your PDF here or click to browse</h3>
-              <p>Supports: PDF documents up to 10MB</p>
+              <p>AI will analyze and summarize your document</p>
               <div className="upload-features">
-                <span> Secure Upload</span>
-                <span> AI Analysis</span>
-                <span> Fast Processing</span>
+                <span> Text Extraction</span>
+                <span> AI Summary</span>
+                <span> Smart Q&A</span>
               </div>
             </div>
           )}
         </div>
 
         <div className="upload-tips">
-          <h4> Connected to Backend:</h4>
+          <h4> AI-Powered Features:</h4>
           <ul>
-            <li>Real file upload to server</li>
-            <li>File validation and processing</li>
-            <li>Ready for OpenAI integration</li>
+            <li>Automatic text extraction from PDF</li>
+            <li>Intelligent document summarization</li>
+            <li>Ask questions about your document</li>
+            <li>Powered by OpenAI GPT technology</li>
           </ul>
         </div>
       </div>
